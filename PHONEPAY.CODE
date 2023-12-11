@@ -1,1 +1,916 @@
 # PHONEPAY
+import os
+import json
+from tkinter import Image
+import pandas as pd
+from PIL import Image
+import mysql.connector
+import streamlit as st
+import plotly.express as px
+from sklearn.preprocessing import MinMaxScaler
+from streamlit_option_menu import option_menu
+
+import streamlit as st
+
+# if not hasattr(st, 'has_set_page_config'):
+# st.has_set_page_config = True
+
+st.set_page_config(
+    page_title="Phonepe Pulse Data Visualization | by vinitha",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={'About': """# This dashboard app is created by *vinitha*!
+                            Data has been cloned from Phonepe Pulse Github Repository"""}
+)
+
+#aggr_transanction
+
+path1="/Users/mulakapranathi/Downloads/pulse-master/data/aggregated/transaction/country/india/state/"
+agg_tran_list=os.listdir(path1)
+
+columns1={"States":[],"Years":[],"Quarter":[],"Transaction_type":[],"Transaction_count":[],"Transaction_amount":[]}
+for state in agg_tran_list:
+    cur_states=path1+state+"/"
+    agg_year_list=os.listdir(cur_states)
+    
+    for year in agg_year_list:
+        cur_year=cur_states+year+"/"
+        agg_file_list=os.listdir(cur_year)
+        
+        for file in agg_file_list:
+            cur_file=cur_year+file
+            data=open(cur_file,"r")
+            
+            A=json.load(data)
+            for i in A["data"]["transactionData"]:
+                name=i["name"]
+                count=i["paymentInstruments"][0]["count"]
+                amount=i["paymentInstruments"][0]["amount"]
+                columns1["Transaction_type"].append(name)
+                columns1["Transaction_count"].append(count)
+                columns1["Transaction_amount"].append(amount)
+                columns1["States"].append(state)
+                columns1["Years"].append(year)
+                columns1["Quarter"].append(int(file.strip(".json")))
+
+aggre_transaction=pd.DataFrame(columns1)
+aggre_transaction
+
+import mysql.connector
+import pandas as pd
+
+# Your previous code remains the same until the insertion part
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+
+# Define the table creation query
+create_table_query = """
+CREATE TABLE IF NOT EXISTS transaction_data (
+    States VARCHAR(255),
+    Years VARCHAR(255),
+    Quarter INT,
+    Transaction_type VARCHAR(255),
+    Transaction_count INT,
+    Transaction_amount FLOAT
+)
+"""
+mycursor = mydb.cursor()
+mycursor.execute(create_table_query)
+
+try:
+    # Iterate through DataFrame rows and insert data row by row
+    for index, row in aggre_transaction.iterrows():
+        sql = "INSERT INTO transaction_data (States, Years, Quarter, Transaction_type, Transaction_count, Transaction_amount) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (row['States'], row['Years'], row['Quarter'], row['Transaction_type'], row['Transaction_count'], row['Transaction_amount'])
+        
+        mycursor.execute(sql, values)
+        
+    # Commit changes to the database
+    mydb.commit()
+    
+except Exception as e:
+    print("An error occurred:", e)
+    
+#aggr_user
+
+path2="/Users/mulakapranathi/Downloads/pulse-master/data/aggregated/user/country/india/state/"
+
+columns2={"States":[],"Years":[],"Quarter":[],"Brands":[],"Transaction_count":[],"Percentage":[]}
+for state in agg_tran_list:
+    cur_states=path2+state+"/"
+    agg_year_list=os.listdir(cur_states)
+    
+    for year in agg_year_list:
+        cur_year=cur_states+year+"/"
+        agg_file_list=os.listdir(cur_year)
+
+        for file in agg_file_list:
+            cur_file=cur_year+file
+            data=open(cur_file,"r")
+            
+            B=json.load(data)
+            
+            try:
+                for i in B["data"]["usersByDevice"]:
+                    brand=i["brand"]
+                    count=i["count"]
+                    percentage=i["percentage"]
+                    columns2["Brands"].append(brand)
+                    columns2["Transaction_count"].append(count)
+                    columns2["Percentage"].append(percentage)
+                    columns2["States"].append(state)
+                    columns2["Years"].append(year)
+                    columns2["Quarter"].append(int(file.strip(".json")))
+                    
+            except:
+                pass
+            
+aggre_user=pd.DataFrame(columns2)
+aggre_user
+
+import mysql.connector
+import pandas as pd
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+# Define the table creation query
+create_table_query = """
+CREATE TABLE IF NOT EXISTS aggregated_user (
+    States VARCHAR(255),
+    Years VARCHAR(255),
+    Quarter INT,
+    Brands VARCHAR(255),
+    Transaction_count INT,
+    Percentage FLOAT
+)
+"""
+mycursor=mydb.cursor()
+mycursor.execute(create_table_query)
+try:
+    # Iterate through DataFrame rows and insert data row by row
+    for index, row in aggre_user.iterrows():
+        sql = "INSERT INTO aggregated_user (States, Years, Quarter, Brands, Transaction_count, Percentage) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (row['States'], row['Years'], row['Quarter'], row['Brands'], row['Transaction_count'], row['Percentage'])
+        
+        mycursor.execute(sql,values)
+        
+    # Commit changes to the database
+    mydb.commit()
+    
+except Exception as e:
+    print("An error occurred:", e)
+    
+#map_transaction
+
+path3="/Users/mulakapranathi/Downloads/pulse-master/data/map/transaction/hover/country/india/state/"
+map_tran_list=os.listdir(path3)
+
+columns3={"States":[],"Years":[],"Quarter":[],"Districts":[],"Transaction_count":[],"Transaction_amount":[]}
+for state in map_tran_list:
+    cur_states=path3+state+"/"
+    agg_year_list=os.listdir(cur_states)
+    
+    for year in agg_year_list:
+        cur_year=cur_states+year+"/"
+        agg_file_list=os.listdir(cur_year)
+        
+        for file in agg_file_list:
+            cur_file=cur_year+file
+            data=open(cur_file,"r")
+            
+            C=json.load(data)
+            
+            for i in C["data"]["hoverDataList"]:
+                name=i["name"]
+                count=i["metric"][0]["count"]
+                amount=i["metric"][0]["count"]
+                columns3["Districts"].append(name)
+                columns3["Transaction_count"].append(count)
+                columns3["Transaction_amount"].append(amount)
+                columns3["States"].append(state)
+                columns3["Years"].append(year)
+                columns3["Quarter"].append(int(file.strip(".json")))
+                
+map_tran=pd.DataFrame(columns3)
+map_tran
+
+import mysql.connector
+import pandas as pd
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+# Define the table creation query
+
+# Your previous code remains the same until the insertion part
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+
+# Define the table creation query
+create_table_query = """
+CREATE TABLE IF NOT EXISTS map_transaction (
+    States VARCHAR(255),
+    Years VARCHAR(255),
+    Quarter INT,
+    Districts VARCHAR(255),
+    Transaction_count INT,
+    Transaction_amount FLOAT
+)
+"""
+mycursor = mydb.cursor()
+mycursor.execute(create_table_query)
+
+try:
+    # Iterate through DataFrame rows and insert data row by row
+    for index, row in map_tran.iterrows():
+        sql = "INSERT INTO map_transaction (States, Years, Quarter, Districts, Transaction_count, Transaction_amount) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (row['States'], row['Years'], row['Quarter'], row['Districts'], row['Transaction_count'], row['Transaction_amount'])
+        
+        mycursor.execute(sql, values)
+        
+    # Commit changes to the database
+    mydb.commit()
+    
+except Exception as e:
+    print("An error occurred:", e)
+    
+#map_user
+
+path4="/Users/mulakapranathi/Downloads/pulse-master/data/map/user/hover/country/india/state/"
+map_user_list=os.listdir(path4)
+
+columns4={"States":[],"Years":[],"Quarter":[],"Districts":[],"RegisteredUsers":[],"AppOpens":[]}
+for state in map_user_list:
+    cur_states=path4+state+"/"
+    agg_year_list=os.listdir(cur_states)
+    
+    for year in agg_year_list:
+        cur_year=cur_states+year+"/"
+        agg_file_list=os.listdir(cur_year)
+        
+        for file in agg_file_list:
+            cur_file=cur_year+file
+            data=open(cur_file,"r")
+            
+            D=json.load(data)
+            
+            for i in D["data"]["hoverData"].items():
+                district=i[0]
+                registeredUsers=i[1]["registeredUsers"]
+                appOpens=i[1]["appOpens"]
+                columns4["Districts"].append(district)
+                columns4["RegisteredUsers"].append(registeredUsers)
+                columns4["AppOpens"].append(appOpens)
+                columns4["States"].append(state)
+                columns4["Years"].append(year)
+                columns4["Quarter"].append(int(file.strip(".json")))
+                
+map_user=pd.DataFrame(columns4)
+map_user
+
+# Your previous code remains the same until the insertion part
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+
+# Define the table creation query
+create_table_query = """
+CREATE TABLE IF NOT EXISTS map_user (
+    States VARCHAR(255),
+    Years VARCHAR(255),
+    Quarter INT,
+    Districts VARCHAR(255),
+    RegisteredUsers INT,
+    AppOpens INT
+)
+"""
+mycursor = mydb.cursor()
+mycursor.execute(create_table_query)
+
+try:
+    # Iterate through DataFrame rows and insert data row by row
+    for index, row in map_user.iterrows():
+        sql = "INSERT INTO map_user (States, Years, Quarter, Districts, RegisteredUsers, AppOpens) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (row['States'], row['Years'], row['Quarter'], row['Districts'], row['RegisteredUsers'], row['AppOpens'])
+        
+        mycursor.execute(sql, values)
+        
+    # Commit changes to the database
+    mydb.commit()
+    
+except Exception as e:
+    print("An error occurred:", e)
+    
+#top_transaction
+
+path5="/Users/mulakapranathi/Downloads/pulse-master/data/top/transaction/country/india/state/"
+columns5 = {"States": [],"Years": [],"Quarter": [],"Transaction_type": [],"Transaction_count": [],"Transaction_amount": []}
+top_tran_list=os.listdir(path5)
+for state in top_tran_list:
+    cur_states=path5+state+"/"
+    agg_year_list=os.listdir(cur_states)
+    
+    for year in agg_year_list:
+        cur_year=cur_states+year+"/"
+        agg_file_list=os.listdir(cur_year)
+        
+        for file in agg_file_list:
+            cur_file=cur_year+file
+            data=open(cur_file,"r")
+            
+            E=json.load(data)
+            
+            for i in E["data"]["districts"]:
+                    name = i["entityName"]
+                    count = i["metric"]["count"]
+                    amount = i["metric"]["amount"]
+                    columns5["Transaction_type"].append(name)
+                    columns5["Transaction_count"].append(count)
+                    columns5["Transaction_amount"].append(amount)
+                    columns5["States"].append(state)
+                    columns5["Years"].append(year)
+                    columns5["Quarter"].append(int(file.strip(".json")))
+
+top_transaction=pd.DataFrame(columns5)
+top_transaction
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+
+# ... (Previous code remains the same until the insertion part)
+
+# Define the table creation query
+create_table_query = """
+CREATE TABLE IF NOT EXISTS top_transaction_data (
+    States VARCHAR(255),
+    Years VARCHAR(255),
+    Quarter INT,
+    Transaction_type VARCHAR(255),
+    Transaction_count INT,
+    Transaction_amount INT
+)
+"""
+
+mycursor = mydb.cursor()
+mycursor.execute(create_table_query)
+try:
+    # Iterate through DataFrame rows and insert data row by row
+    for index, row in top_transaction.iterrows():
+        sql = "INSERT INTO top_transaction_data (State, Year, Quarter, Transaction_type, Transaction_count, Transaction_amount) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (row['State'], row['Year'], row['Quarter'], row['Transaction_type'], row['Transaction_count'], row['Transaction_amount'])
+        
+        mycursor.execute(sql, values)
+        
+    # Commit changes to the database
+    mydb.commit()
+    
+except Exception as e:
+    print("An error occurred:", e)
+    
+#top_user
+
+path6 = "/Users/mulakapranathi/Downloads/pulse-master/data/top/user/country/india/state/"
+top_user_list = os.listdir(path6)
+
+columns6 = {"State": [],"Year": [],"Quarter": [],"Districts": [],"RegisteredUsers": [],"Pincodes": []}
+
+for state in top_user_list:
+    cur_states = path6 + state + "/"
+    agg_year_list = os.listdir(cur_states)
+    
+    for year in agg_year_list:
+        cur_year = cur_states + year + "/"
+        agg_file_list = os.listdir(cur_year)
+        
+        for file in agg_file_list:
+            curr_file = cur_year + file
+            with open(curr_file, "r") as data_file:
+                data = json.load(data_file)
+                
+                F=data
+                
+                for i in F["data"]["districts"]:
+                    district = i["name"]
+                    registeredUsers = i["registeredUsers"]
+                    pincodes = [pin["name"] for pin in F["data"]["pincodes"]]
+                    columns6["Districts"].append(district)
+                    columns6["RegisteredUsers"].append(registeredUsers)
+                    columns6["Pincodes"].append(pincodes)
+                    columns6["State"].append(state)
+                    columns6["Year"].append(year)
+                    columns6["Quarter"].append(int(file.strip(".json")))
+
+top_user=pd.DataFrame(columns6)
+top_user
+
+# Establish a connection to the MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+
+# Define the table creation query
+create_top_user_table_query = """
+CREATE TABLE IF NOT EXISTS top_user_data (
+    States VARCHAR(255),
+    Years VARCHAR(255),
+    Quarter INT,
+    Districts VARCHAR(255),
+    RegisteredUsers INT,
+    Pincode VARCHAR(255)
+)
+"""
+mycursor = mydb.cursor()
+mycursor.execute(create_top_user_table_query)
+
+try:
+    # Iterate through DataFrame rows and insert data row by row
+    for index, row in top_user.iterrows():
+        # Convert the list of pincodes to a string
+        pincode_str = ', '.join(row['Pincodes'])
+        
+        # Update the values for insertion
+        sql = "INSERT INTO top_user_data (State, Year, Quarter, District, RegisteredUsers, Pincode) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (row['States'], row['Years'], row['Quarter'], row['Districts'], row['RegisteredUsers'], pincode_str)
+        
+        mycursor.execute(sql, values)
+    # Commit changes to the database
+    mydb.commit()
+    
+except Exception as e:
+    print("An error occurred:", e)
+    
+
+ # Connect to MySQL server    
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1234",
+    database="Phonepay",
+    auth_plugin='mysql_native_password'
+)
+
+
+# Display a title
+st.markdown(f'<h1 style="text-align: center;">PhonePe Pulse Data Visualization and Exploration</h1>', unsafe_allow_html=True)
+# Creating option menu in the side bar
+
+selected = option_menu( options=["Home","Data Overview","Top Charts","Explore Data","About"], 
+                icons=["house","graph-up-arrow","bar-chart-line", "exclamation-circle"],
+                menu_title=None,
+                default_index=0,
+                orientation="horizontal",
+                styles={"nav-link": {"font-size": "20px", "text-align": "left", "margin": "-2px"},
+                         "nav-link-selected": {"background-color": "purple"}                         }
+)
+     
+        
+if selected == "Home":
+    col1,col2 = st.columns(2,gap= 'medium')
+    col1.markdown("## :blue[Domain] : Fintech")
+    col1.markdown("## :blue[Technologies used] : Github Cloning, Python, Pandas, MySQL,mysql-connector-python, Streamlit, and Plotly")
+    col1.markdown("## :clipboard: Problem Statement:")
+    col1.markdown("### :The Phonepe pulse Github repository contains a large amount of data related to various metrics and statistics. The goal is to extract this data and process it to obtain insights and information that can be visualized in a user-friendly manner.")
+    col2.markdown("#   ")
+    col2.markdown("#   ")
+    col2.markdown("#   ")
+
+if selected == "Data Overview":
+        st.write('')
+        st.header('PhonePe Pulse Data: Insights for India')
+        st.write('')
+
+        st.subheader('Key Dimensions:')
+        st.write('- State - All States in India')
+        st.write('- Year -  2018 to 2022')
+        st.write('- Year -  2018 to 2023')
+        st.write('- Quarter - Q1 (Jan to Mar), Q2 (Apr to June), Q3 (July to Sep), Q4 (Oct to Dec)')
+
+        st.subheader('Aggregated Transaction:')
+        st.write('Transaction data broken down by type of payments at state level.')
+        st.write('- Recharge & bill payments')
+        st.write('- Peer-to-peer payments')
+        st.write('- Merchant payments')
+        st.write('- Financial Services')
+        st.write('- Others')
+        st.subheader('Aggregated User:')
+        st.write('Users data broken down by devices at state level.')
+        col1,col2,col3,col4, col5, col6 = st.columns(6)
+        with col1:
+                st.write(':small_blue_diamond: Apple')
+                st.write(':small_blue_diamond: Asus')
+                st.write(':small_blue_diamond: Coolpad')
+                st.write(':small_blue_diamond: Gionee')
+                st.write(':small_blue_diamond: HMD Global')
+        with col2:
+                st.write(':small_blue_diamond: Huawei')
+                st.write(':small_blue_diamond: Infinix')
+                st.write(':small_blue_diamond: Lava')
+                st.write(':small_blue_diamond: Lenovo')
+                st.write(':small_blue_diamond: Lyf')
+        with col3:
+                st.write(':small_blue_diamond: Micromax')
+                st.write(':small_blue_diamond: Motorola')
+                st.write(':small_blue_diamond: OnePlus')
+                st.write(':small_blue_diamond: Oppo')
+                st.write(':small_blue_diamond: Realme')
+        with col4:
+                st.write(':small_blue_diamond: Samsung')
+                st.write(':small_blue_diamond: Tecno')
+                st.write(':small_blue_diamond: Vivo')
+                st.write(':small_blue_diamond: Xiaomi')
+                st.write(':small_blue_diamond: Others')
+        st.subheader('Map Transaction:')
+        st.write('- Total number of transactions at the state / district level.')
+        st.write('- Total value of all transactions at the state / district level.')
+        st.subheader('Map User:')
+        st.write('- Total number of registered users at the state / district level.')
+        st.write('- Total number of app opens by these registered users at the state / district level.')
+        st.subheader('Top Transaction:')
+        st.write('Explore the most number of the transactions happened for a selected Year-Quarter combination')
+        st.write('- Top 10 States')
+        st.write('- Top 10 Districts')
+        st.write('- Top 10 Pincodes')
+        st.subheader('Top User:')
+        st.write('Explore the most number of registered users for a selected Year-Quarter combination')
+        st.write('- Top 10 States')
+        st.write('- Top 10 Districts')
+        st.write('- Top 10 Pincodes')
+         
+# TOP CHARTS
+if selected == "Top Charts":
+    st.markdown("## :green[Top Charts]")
+    Type = st.sidebar.selectbox("**Type**", ("Transactions", "Users"))
+    colum1,colum2= st.columns([1,1.5],gap="large")
+    with colum1:
+        Year=st.selectbox('**Year**',('2018','2019','2020','2021','2022'))
+        Quarter=st.selectbox('**Quarter**',('1','2','3','4'))
+        Year = st.slider("**Year**", min_value=2018, max_value=2022)
+        Quarter = st.slider("Quarter", min_value=1, max_value=4)
+    
+    with colum2:
+        st.info(
+                """
+                #### From this menu we can get insights like :
+                - Overall ranking on a particular Year and Quarter.
+                - Top 10 State, District, Pincode based on Total number of transaction and Total amount spent on phonepe.
+                - Top 10 State, District, Pincode based on Total phonepe users and their app opening frequency.
+                - Top 10 mobile brands and its percentage based on the how many people use phonepe.
+                """,icon="🔍"
+                )
+        
+    # Top Charts - TRANSACTIONS    
+    if Type == "Transactions":
+        col1,col2,col3 = st.columns([1,1,1],gap="small")
+        # Connect to MySQL server    
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database="Phonepay",
+            auth_plugin='mysql_native_password'
+        )
+        mycursor = mydb.cursor()
+        
+        with col1:
+            st.markdown("### :green[Top 10 States]")
+            mycursor.execute(f"select States, sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Total from transaction_data where Years = {Year} and Quarter = {Quarter} group by States order by Total desc limit 10")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['States', 'Transaction_count','Transaction_amount'])
+            fig = px.pie(df, values='Transaction_amount',
+                             names='States',
+                             title='Top 10',
+                             color_discrete_sequence=px.colors.sequential.Viridis,
+                             hover_data=['Transaction_count'],
+                             labels={'Transaction_count':'Transaction_count'})
+
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig,use_container_width=True)
+            
+        with col2:
+            st.markdown("### :green[Top 10 District]")
+            mycursor.execute(f"select Districts , sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Total from map_transaction where Years = {Year} and Quarter = {Quarter} group by Districts order by Total desc limit 10")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['Districts', 'Transaction_count','Transaction_amount'])
+
+            fig = px.pie(df, values='transaction_amount',
+                             names='Districts',
+                            #  title='Top 10',
+                             color_discrete_sequence=px.colors.sequential.Agsunset,
+                             hover_data=['Transaction_count'],
+                             labels={'Transaction_count':'Transaction_count'})
+
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig,use_container_width=True)
+            
+        with col3:
+            st.markdown("### :green[Top 10 Pincode]")
+            mycursor.execute(f"select pincode, sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Total from top_transaction where year = {Year} and quater= {Quarter} group by pincode order by Total desc limit 10")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['Pincodes', 'Transaction_count','Transaction_amount'])
+            fig = px.pie(df, values='Transaction_amount',
+                             names='pincode',
+                            #  title='Top 10',
+                             color_discrete_sequence=px.colors.sequential.Viridis,
+                             hover_data=['Transaction_count'],
+                             labels={'Transaction_count':'Transaction_count'})
+
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig,use_container_width=True)
+
+    # Top Charts - USERS          
+    if Type == "Users":
+        col1,col2,col3,col4 = st.columns([2,2,2,2],gap="small")
+        # Connect to MySQL server    
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database="Phonepay",
+            auth_plugin='mysql_native_password'
+        )
+        mycursor = mydb.cursor()
+        
+        
+        with col1:
+            st.markdown("### :green[Brands]")
+            if Year == 2022 and Quarter in [2,3,4]:
+                st.markdown("#### Sorry No Data to Display for 2022 Qtr 2,3,4")
+            else:
+                mycursor.execute(f"SELECT user_brand, SUM(user_count) AS total_user_count, AVG(user_percentage) * 100 AS avg_user_percentage FROM aggregated_user WHERE Years = {Year} AND quater = {Quarter} GROUP BY user_brand ORDER BY total_user_count DESC LIMIT 10")
+                df = pd.DataFrame(mycursor.fetchall(), columns=['Brands', 'count', 'Percentage'])
+
+                import plotly.express as px
+                fig = px.bar(
+                    df,
+                    title='Top 10 User Brands',
+                    x="total_user_count",
+                    y="Brands",
+                    orientation='h',
+                    color='avg_user_percentage',
+                    color_discrete_sequence=px.colors.sequential.Viridis)
+
+                fig.update_layout(xaxis_title='Total User Count', yaxis_title='User Brand')
+                st.plotly_chart(fig, use_container_width=True)
+   
+    
+        with col2:
+            st.markdown("### :green[District]")
+            mycursor.execute(f"select Districts, sum(RegisteredUsers) as Total_Users, sum(AppOpens) as Total_Appopens from map_user where Years = {Year} and quater= {Quarter} group by Districts,registered_user order by Total_Users  desc limit 10")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['Districts', 'RegisteredUsers','AppOpens'])
+            df.registered_user = df.registered_user.astype(float)
+            fig = px.bar(df,
+                         title='Top 10',
+                         x="registered_user",
+                         y="Districts",
+                         orientation='h',
+                         color='registered_user',
+                         color_continuous_scale=px.colors.sequential.Agsunset)
+            st.plotly_chart(fig,use_container_width=True)
+              
+        with col3:
+            st.markdown("### :green[Pincode]")
+            mycursor.execute(f"select pincode, sum(registered_user) as Total_Users from top_user where Years = {Year} and Quater= {Quarter} group by Pincodes order by Total_Users desc limit 10")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['Pincodes', 'RegisteredUsers'])
+            fig = px.pie(df,
+                         values='registered_user',
+                         names='pincode',
+                         title='Top 10',
+                         color_discrete_sequence=px.colors.sequential.Viridis,
+                         hover_data=['registered_user'])
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig,use_container_width=True)
+            
+        with col4:
+            st.markdown("### :green[States]")
+            mycursor.execute(f"select States, sum(RegisteredUsers) as Total_Users, sum(AppOpens) as Total_Appopens from map_user where Years = {Year} and quater= {Quarter} group by States order by Total_Users desc limit 10")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['States', 'RegisteredUsers','AppOpens'])
+            fig = px.pie(df, values='registered_user',
+                             names='States',
+                             title='Top 10',
+                             color_discrete_sequence=px.colors.sequential.Agsunset,
+                             hover_data=['app_opens'],
+                             labels={'app_opens':'app_opens'})
+
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig,use_container_width=True)
+            
+            
+# EXPLORE DATA
+if selected == "Explore Data":
+    Type = st.sidebar.selectbox("**Type**", ("Transactions", "Users"))
+    colum1,colum2= st.columns([1,1.5],gap="large")
+    
+    Year = st.sidebar.slider("**Year**", min_value=2018, max_value=2022)
+    Quarter = st.sidebar.slider("Quarter", min_value=1, max_value=4)
+    
+    col1,col2= st.columns(2)   
+     #EXPLORE DATA - Transactions   
+    if Type == "Transactions":     
+        # Overall State Data - TRANSACTIONS AMOUNT - INDIA MAP
+        # Connect to MySQL server    
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database="Phonepay",
+            auth_plugin='mysql_native_password'
+        )
+        mycursor = mydb.cursor() 
+        
+        with col1:
+            st.markdown("## :violet[Overall State Data - Transactions Amount]")
+            mycursor.execute(f"select States, sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Transaction_amount from map_transaction where Years = {Year} and Quarter= {Quarter} group by States order by States")
+            df1 = pd.DataFrame(mycursor.fetchall(),columns= ['States', 'Transaction_count', 'Transaction_amount'])
+            df2 = pd.read_csv('/Users/mulakapranathi/Downloads/States.csv')
+            df1.Transaction_amount = df1.Transaction_amount.astype(int )
+            df1['Total_amount'] = df1['Transaction_count'] * df1['Transaction_amount']
+
+            
+            
+            fig = px.choropleth(df1,geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+                        featureidkey='properties.ST_NM',
+                        locations='States',
+                        color='Total_amount',
+                        color_continuous_scale='sunset')
+
+            fig.update_geos(fitbounds="locations", visible=False)
+            st.plotly_chart(fig,use_container_width=True)
+            
+            with col2:
+            
+                st.markdown("## :violet[Overall State Data - Transactions count]")
+                mycursor.execute(f"select States, sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Transaction_amount from map_transaction where Years = {Year} and Quarter = {Quarter} group by States order by States")
+                df1 = pd.DataFrame(mycursor.fetchall(),columns= ['States', 'Transaction_count', 'Transaction_amount'])
+                df2 = pd.read_csv('/Users/mulakapranathi/Downloads/states.csv')
+                df1.Transaction_count = df1.Transaction_count.astype(int )
+                df1['Total_Transactions'] = df1['Transaction_count'] * df1['Transaction_amount']
+
+                
+                fig = px.choropleth(df1,geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+                            featureidkey='properties.ST_NM',
+                            locations='States',
+                            color='Total_Transactions',
+                            color_continuous_scale='sunset')
+
+                fig.update_geos(fitbounds="locations", visible=False)
+                st.plotly_chart(fig,use_container_width=True)
+                
+               
+            # BAR CHART - TOP PAYMENT TYPE
+            st.markdown("## :violet[Top Payment Type]")
+            mycursor.execute(f"select transaction_type, sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Total_Transactions_amount from transaction_data where Years= {Year} and Quarter = {Quarter} group by transaction_type order by Transaction_type")
+            df = pd.DataFrame(mycursor.fetchall(), columns=['transaction_type', 'Transaction_count','Transaction_amount'])
+
+            fig = px.bar(df,
+                        title='Transaction Types vs Total_Transactions',
+                        x="transaction_type",
+                        y="Transaction_count",
+                        orientation='v',
+                        color='Transaction_amount',
+                        color_continuous_scale=px.colors.sequential.Agsunset)
+            st.plotly_chart(fig,use_container_width=False) 
+            
+            # BAR CHART TRANSACTIONS - DISTRICT WISE DATA            
+            st.markdown("# ")
+            st.markdown("# ")
+            st.markdown("# ")
+            st.markdown("## :violet[Select any State to explore more]")
+            selected_state = st.selectbox("",
+                              ('andaman-&-nicobar-islands','andhra-pradesh','arunachal-pradesh','assam','bihar',
+                               'chandigarh','chhattisgarh','dadra-&-nagar-haveli-&-daman-&-diu','delhi','goa','gujarat','haryana',
+                               'himachal-pradesh','jammu-&-kashmir','jharkhand','karnataka','kerala','ladakh','lakshadweep',
+                               'madhya-pradesh','maharashtra','manipur','meghalaya','mizoram',
+                               'nagaland','odisha','puducherry','punjab','rajasthan','sikkim',
+                               'tamil-nadu','telangana','tripura','uttar-pradesh','uttarakhand','west-bengal'), index=30)
+            
+            mycursor.execute(f"select States, Districts, Years, Quarter, sum(Transaction_count) as Transaction_count, sum(Transaction_amount) as Transaction_amount from map_transaction where Years = {Year} and Quarter = {Quarter} and States = '{selected_state}' group by States, Districts, Years, Quarter order by States, Districts")
+
+            df1 = pd.DataFrame(mycursor.fetchall(), columns=['States', 'Districts', 'Years', 'Quarter', 'Transaction_count', 'Transaction_amount'])
+
+            fig = px.bar(df1,
+                        title=selected_state,
+                        x="Districts",
+                        y="Transaction_count",
+                        orientation='v',
+                        color='Transaction_amount',  # Use the correct column name here
+                        color_continuous_scale=px.colors.sequential.Agsunset)
+
+            st.plotly_chart(fig, use_container_width=True)
+
+    
+    # EXPLORE DATA - USERS      
+    if Type == "Users":
+        
+        # Connect to MySQL server    
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database="Phonepay",
+            auth_plugin='mysql_native_password'
+        )
+        mycursor = mydb.cursor() 
+        
+    # Create a Streamlit title
+        st.markdown("## :violet[Overall State Data - User App Opening Frequency]")            
+        mycursor.execute(f"SELECT States, SUM(RegisteredUsers) AS Total_Users, SUM(AppOpens) AS Total_Appopens FROM map_user WHERE Years = {Year} AND Quarter = {Quarter} GROUP BY States ORDER BY States")
+        df1 = pd.DataFrame(mycursor.fetchall(), columns=['States', 'Total_Users', 'Total_Appopens'])
+        df2 = pd.read_csv('/Users/mulakapranathi/Downloads/states.csv')   
+        df1['Total_Appopens'] = df1['Total_Appopens'].astype(float)
+        fig = px.choropleth(
+            df1,
+            geojson="https://gist.githubusercontent.com/jbrobst/56c13bbbf9d97d187fea01ca62ea5112/raw/e388c4cae20aa53cb5090210a42ebb9b765c0a36/india_states.geojson",
+            featureidkey='properties.ST_NM',
+            locations='States',
+            color='Total_Appopens',
+            color_continuous_scale='sunset'
+        )
+        fig.update_geos(fitbounds="locations", visible=False)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # BAR CHART TOTAL UERS - DISTRICT WISE DATA 
+        st.markdown("## :violet[Select any State to explore more]")
+        selected_state = st.selectbox("",
+                            ('andaman-&-nicobar-islands','andhra-pradesh','arunachal-pradesh','assam','bihar',
+                            'chandigarh','chhattisgarh','dadra-&-nagar-haveli-&-daman-&-diu','delhi','goa','gujarat','haryana',
+                            'himachal-pradesh','jammu-&-kashmir','jharkhand','karnataka','kerala','ladakh','lakshadweep',
+                            'madhya-pradesh','maharashtra','manipur','meghalaya','mizoram',
+                            'nagaland','odisha','puducherry','punjab','rajasthan','sikkim',
+                            'tamil-nadu','telangana','tripura','uttar-pradesh','uttarakhand','west-bengal'),index=30)
+            
+        mycursor.execute(f"select States,Years,Quarter,Districts,sum(RegisteredUsers) as Total_Users, sum(AppOpens) as Total_Appopens from map_user where Years = {Year} and Quarter = {Quarter} and States = '{selected_state}' group by States, Districts,Years,Quarter order by States,Districts")
+        
+        df = pd.DataFrame(mycursor.fetchall(), columns=['States','Years', 'Quarter', 'Districts', 'Total_Users','Total_Appopens'])
+        df.Total_Users = df.Total_Users.astype(int)
+        
+        fig = px.bar(df,
+                    title=selected_state,
+                    x="Districts",
+                    y="Total_Users",
+                    orientation='v',
+                    color='Total_Users',
+                    color_continuous_scale=px.colors.sequential.Agsunset)
+        st.plotly_chart(fig,use_container_width=True)
+
+
+ 
+# MENU 4 - ABOUT
+if selected == "About":
+    col1,col2 = st.columns([3,3],gap="medium")
+    with col1:
+        st.write(" ")
+        st.write(" ")
+        st.markdown("### :violet[About PhonePe Pulse:] ")
+        st.write("##### BENGALURU, India, On Sept. 3, 2021 PhonePe, India's leading fintech platform, announced the launch of PhonePe Pulse, India's first interactive website with data, insights and trends on digital payments in the country. The PhonePe Pulse website showcases more than 2000+ Crore transactions by consumers on an interactive map of India. With  over 45% market share, PhonePe's data is representative of the country's digital payment habits.")
+        
+        st.write("##### The insights on the website and in the report have been drawn from two key sources - the entirety of PhonePe's transaction data combined with merchant and customer interviews. The report is available as a free download on the PhonePe Pulse website and GitHub.")
+        
+        st.markdown("### :violet[About PhonePe:] ")
+        st.write("##### PhonePe is India's leading fintech platform with over 300 million registered users. Using PhonePe, users can send and receive money, recharge mobile, DTH, pay at stores, make utility payments, buy gold and make investments. PhonePe forayed into financial services in 2017 with the launch of Gold providing users with a safe and convenient option to buy 24-karat gold securely on its platform. PhonePe has since launched several Mutual Funds and Insurance products like tax-saving funds, liquid funds, international travel insurance and Corona Care, a dedicated insurance product for the COVID-19 pandemic among others. PhonePe also launched its Switch platform in 2018, and today its customers can place orders on over 600 apps directly from within the PhonePe mobile app. PhonePe is accepted at 20+ million merchant outlets across Bharat")
+        
+        st.write("**:violet[My Project GitHub link]** ⬇️")
+        st.write("https://github.com/tvinitha/-Phonepe-Pulse-Data-Visualization-and-Exploration.git")
+              
+    with col2:
+        st.write(" ")
+        st.write(" ")
+        st.write(" ")
+        st.write(" ")
